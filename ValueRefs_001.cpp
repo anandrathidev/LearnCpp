@@ -85,7 +85,6 @@ int main()
 
     std::cout<< "const Vals created" << std::endl;
 
-
     // testfunc argument bound to temp thows away
     const Val& test_foo = ConstLvalRefParameterReturnParameter(++i);
     std::cout<< "Return ConstLvalRefParameterReturnParameter" << std::endl;
@@ -101,11 +100,11 @@ int main()
     std::cout<< "Return LvalRefParameterReturnRVal store const_lval_foo3" << std::endl;
 
     // BAD temp var bound to a ref
-    Val&& rval_foo = ReturnTempRvalRef(++i);
-    std::cout<< "Return ReturnTempRvalRef  store to rval" << std::endl;
+    Val&& rval_foo4 = ReturnTempRvalRef(++i);
+    std::cout<< "Return ReturnTempRvalRef  store to rval rval_foo4" << std::endl;
 
-    const Val&& const_rval_foo = ReturnTempRvalRef(++i);
-    std::cout<< "Return ReturnTempRvalRef  store to const rval const_rval_foo" << std::endl;
+    const Val&& const_rval_foo4 = ReturnTempRvalRef(++i);
+    std::cout<< "Return ReturnTempRvalRef  store to const rval const_rval_foo4" << std::endl;
 
     const Val& const_lval_foo4 = ReturnTempRvalRef(++i);
     std::cout<< "Return ReturnTempRvalRef store to const lval const_lval_foo4" << std::endl;
@@ -124,3 +123,70 @@ int main()
     std::cout<< "Return from main" << std::endl;
     return 0;
 }
+
+/*
+
+<source>: In function 'Val&& ReturnTempRvalRef(int)':
+<source>:58:12: warning: returning reference to temporary [-Wreturn-local-addr]
+   58 |     return Val{i};
+      |            ^~~~~~
+<source>: In function 'const Val&& ReturnTempConstRvalRef(int)':
+<source>:65:12: warning: returning reference to temporary [-Wreturn-local-addr]
+   65 |     return Val{i};
+      |            ^~~~~~
+<source>: In function 'const Val& ReturnTempConstLValRef(int)':
+<source>:73:12: warning: returning reference to temporary [-Wreturn-local-addr]
+   73 |     return Val{i};
+      |            ^~~~~~
+ASM generation compiler returned: 0
+<source>: In function 'Val&& ReturnTempRvalRef(int)':
+<source>:58:12: warning: returning reference to temporary [-Wreturn-local-addr]
+   58 |     return Val{i};
+      |            ^~~~~~
+<source>: In function 'const Val&& ReturnTempConstRvalRef(int)':
+<source>:65:12: warning: returning reference to temporary [-Wreturn-local-addr]
+   65 |     return Val{i};
+      |            ^~~~~~
+<source>: In function 'const Val& ReturnTempConstLValRef(int)':
+<source>:73:12: warning: returning reference to temporary [-Wreturn-local-addr]
+   73 |     return Val{i};
+      |            ^~~~~~
+Execution build compiler returned: 0
+Program returned: 0
+Constructing with value 1 at: 0x7ffe84ab70ec
+Constructing with value 2 at: 0x7ffe84ab70e8
+const Vals created
+Constructing with value 3 at: 0x7ffe84ab70f0
+Enter ConstLvalRefParameterReturnParameter
+Destructing with value 3 at: 0x7ffe84ab70f0
+Return ConstLvalRefParameterReturnParameter
+Constructing with value 4 at: 0x7ffe84ab70f4
+Enter RvalRefParameterReturnRVal
+Destructing with value 4 at: 0x7ffe84ab70f4
+Return testFunc store const_lval_foo2
+Constructing with value 5 at: 0x7ffe84ab70e4
+Create temp foo2
+Enter ConstLvalRefParameterReturnRVal
+Return LvalRefParameterReturnRVal store const_lval_foo3
+Enter ReturnTempRvalRef
+Constructing with value 6 at: 0x7ffe84ab70bc
+Destructing with value 6 at: 0x7ffe84ab70bc
+Return ReturnTempRvalRef  store to rval rval_foo4
+Enter ReturnTempRvalRef
+Constructing with value 7 at: 0x7ffe84ab70bc
+Destructing with value 7 at: 0x7ffe84ab70bc
+Return ReturnTempRvalRef  store to const rval const_rval_foo4
+Enter ReturnTempRvalRef
+Constructing with value 8 at: 0x7ffe84ab70bc
+Destructing with value 8 at: 0x7ffe84ab70bc
+Return ReturnTempRvalRef store to const lval const_lval_foo4
+Enter ReturnTempConstLValRef
+Constructing with value 9 at: 0x7ffe84ab70bc
+Destructing with value 9 at: 0x7ffe84ab70bc
+Return ReturnTempConstLValRef store to rval const_lval_foo5
+Return from main
+Destructing with value 5 at: 0x7ffe84ab70e4
+Destructing with value 2 at: 0x7ffe84ab70e8
+Destructing with value 1 at: 0x7ffe84ab70ec
+
+*/
