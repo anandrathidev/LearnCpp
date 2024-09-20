@@ -1,0 +1,48 @@
+
+A lot of memory ordering guarantees, among them:
+
+Loads are not reordered with other loads.
+Stores are not reordered with other stores.
+Stores are not reordered with older loads.
+In a multiprocessor system, memory ordering obeys causality (memory ordering respects transitive visibility).
+In a multiprocessor system, stores to the same location have a total order.
+In a multiprocessor system, locked instructions have a total order.
+Loads and stores are not reordered with locked instructions.
+
+The problem is that atomic operations on their own don't prevent reordering. We need an additional concept for atomics to do this. In C11, atomic operations take in another parameter called "memory ordering" which helps solve this problem.
+
+# Atomic 
+example 
+std::atomic<bool> ready(false);
+
+A store to Atmomic is a release operation 
+A load from Atmomic is a acquire operation ?   while (!ready.load());
+
+
+
+Object layout considerations 
+Given two global variables char c; and char d; :
+
+Q is this race ? What if C & D are consecutive to each other 
+C++11 does padding 
+
+// Thread 2
+{
+	lock_guard<mutex> lock( dMutex );
+	 d = 1;
+ }
+
+// Thread 1 
+
+{
+
+lock_guard<mutex> lock( cMutex ); lock_guard<mutex> lock( dMutex );
+
+c = 1;
+
+}
+
+
+What about a global s of type struct { int c:9; int d:7; }?
+It may be impossible to generate code that will update the bits of c without updating the bits of d, and vice versa.
+ C11/C++11 say that this is a race. Adjacent bitfieldsare one “object.”

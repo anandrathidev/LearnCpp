@@ -1,0 +1,229 @@
+Concurrency Modern C++
+- Create thrad std::thread threadB = std::thread([](){ puts("Hello from threadB!"); });
+- threadB.join(); // will block til lthread func returns 
+
+- std::atomic<bool> ready = false;
+  std::thread threadB = std::thread([&](){ while (!ready) { } printf("Hello from B\n"); });   // No data race as ready is atomic 
+  ready = true;
+  threadB.join();
+  while (!ready) = SPIN will consume cpu  
+  
+- std::mutex mtx; 
+  mtx.lock();
+  std::thread threadB = std::thread([&](){ mtx.lock(); mtx.unlock(); printf("Hello from B\n"); }); // Better because it will sleep 
+  mtx.unlock(); 
+
+- std::lock_guard<std::mutex> lk(mtx_); Prefer lock_guard, RAII pattern 
+  However lock_guard is non movable 
+  
+- std::unique_lock // help us manage unique ownership of mutex locks.  
+  unique_lock can be passed around and is movable.
+
+	unique_lock<mutex> foo(unique_lock<mutex> lk) {
+	if (rand())
+		lk.unlock(); // prematurely clean up
+	return lk; // the resource
+	}
+
+
+- C++17 introduced std::scoped_lock<Ts...> as a “new and improved” std::lock_guard<T> . It can take multiple mutexes “at once,”
+   std::scoped_lock lk(mtx_, rhs.mtx_);
+   
+- std::condition_variable
+  cv_.notify_one(); “Notifying” the condition variable will wake up any one thread that’s blocked on it.   
+  std::unique_lock lk(mtx_);
+  while (tokens_.empty()) {
+	cv_.wait(lk);   <<<==  Internally, cv_.wait(lk) will relinquish the lock and go to sleep; then, once it wakes up, it’ll re-acquire the lock.
+ }
+  
+
+- mutex + condition_variable 
+	● Whenever you have a “producer” and a “consumer”...
+	○ ...where the consumer must wait for the producer...
+	○ ...and production and consumption happen over and over...
+
+- If produce/consume happen only once, consider std::promise/std::future	
+
+-in  C++11 static SingletonFoo instance; NO RACE is guranteed  as per standard
+inline auto& SingletonFoo::getInstance() {
+	static SingletonFoo instance;
+	return instance;
+}
+	The first thread to arrive will start initializing the static instance.
+	Any more that arrive will block and wait until the first thread either succeeds
+	(unblocking them all) or fails with an exception (unblocking one of them).
+
+	In C++03, to make a “singleton” thread-safe, you had to experiment with things
+	like “double-checked locking,” and of course it was all Undefind Behaviour / UB anyway.
+	In C++11, it’s as easy as:
+	
+	
+- std::once_flag once_;
+  std::call_once(once_, []() { 	conn_ = NetworkConnection(defaultHost); 	});	//  Here, the first access to conn_ is protected by a once_flag.
+  This mimics how C++ does static initialization,  but for a non-static. Each Logger has its own conn_, protected by its own once_.
+  
+- mutex:
+	Many threads can queue up on lock.
+	Calling unlock unblocks exactly one waiter: the new “owner.”
+	lock blocks only if somebody “owns” the mutex.  
+	
+- condition_variable:
+	Many threads can queue up on wait.
+	Calling notify_one unblocks exactly one waiter.
+	Calling notify_all unblocks all waiters.
+	wait always blocks	
+	
+- once_flag:
+	Many threads can queue up on call_once.
+	Failing at the callback unblocks exactly one waiter: the new “owner.”
+	Succeeding at the callback unblocks all waiters and sets the “done” flag.
+	call_once blocks only if the “done” flag isn’t set.	
+	
+- mutable std::shared_mutex rw_;
+	std::unique_lock<std::shared_mutex> lk(rw_); // Writer lock = std::unique_lock
+	std::shared_lock<std::shared_mutex> lk(rw_); // Reader Lock = std::shared_lock
+	
+- C++20 std::counting_semaphore<256> sem_{100};	256 = MAX , 100 = Initial 
+	sem_.acquire(); // may block
+	sem_.release(); 
+	unlike mutex locks not tied to any particular thread.
+	
+	
+-	Using Sem = std::counting_semaphore<256>;
+	struct SemReleaser 
+	{
+		bool operator()(Sem *s) const { s->release(); }
+	};
+	
+	class AnonymousTokenPool 
+	{
+		Sem sem_{100};
+		using Token = std::unique_ptr<Sem, SemReleaser>;
+		Token borrowToken() 
+		{
+			sem_.acquire(); // may block
+			return Token(&sem_);
+		}
+	};
+	This slight change makes our token pool safer to use.
+	Destroying a Token now automatically returns it to the pool.
+
+
+-	C++20 std::latch
+	● A latch is kind of like a semaphore, in that it has an integer counter that starts positive and counts down toward zero.
+	● latch.wait() blocks until the counter reaches zero.
+	● latch.count_down() decrements the counter.
+	○ If the counter reaches zero then this unblocks all the waiters.
+	● latch.arrive_and_wait() decrements and begins waiting.
+	Use a std::latch as a one-shot “starting gate” mechanism: “Wait for
+	everyone to arrive at this point, then unblock everyone simultaneously.”
+	latch is like once_flag in that there is no way to “reset” its counter.
+
+-	C++20 std::barrier<>
+	std::barrier b(2, []{ puts("Green flag, go!"); });
+	● A barrier is essentially a resettable latch.
+	● barrier.wait() blocks until the counter reaches zero, as before.
+	● barrier.arrive() decrements the counter.
+	○ If the counter reaches zero then this unblocks all the waiters...
+	○ ...and begins a new phase with the counter reset to its initial value.
+	● barrier.arrive_and_wait() decrements and waits, as before.
+	Use std::barrier as a “pace car” mechanism: “Stop everyone as they arrive
+	at this point. Once everyone’s caught up, unblock everyone, and atomically
+	refresh the barrier to stop them on their next trip around the loop.”	
+	std::barrier, unlike std::latch, is a class template!
+	○ The template parameter has a default, so CTAD permits you to say
+	barrier b; in most places. But I recommend barrier<>, just like
+	less<>.
+	○ It defines a “completion function” to be called right before everyone is
+	unblocked. The default is “do nothing,” which is usually fine.
+	● “Lapping the pace car” produces UB. Falling two laps behind produces UB.
+	● myBarrier.arrive_and_drop() lets your car drop out of the race forever.
+
+	another solution to our thread-starting problem.
+	std::latch myLatch(2);
+	std::thread threadB = std::thread([&](){
+	myLatch.arrive_and_wait();
+	printf("Hello from B\n");
+	});
+	printf("Hello from A\n");
+	myLatch.arrive_and_wait();
+	threadB.join();
+	printf("Hello again from A\n");
+	
+	
+	
+- std::async creates a new thread on each call. The STL’s async has serious perf caveats, but it’s nice API
+design — this factory function saves the programmer from managing raw threads by hand.	
+std::future<int> f1 = std::async([]() {
+	puts("Hello from thread A!");
+	return 1;
+	});
+	
+	f1.get() <<< BLOCKING
+
+
+- Patterns for sharing data
+	● Remember: Protect shared data with a mutex.
+	○ You must protect every access, both reads and writes, to avoid UB.
+	○ Maybe use a reader-writer lock (std::shared_mutex) for perf.
+	● Remember: Producer/consumer? Use mutex + condition_variable.
+	● Best of all, though: Avoid sharing mutable data between threads.
+	○ Make the data immutable.
+	○ Clone a “working copy” for yourself, mutate that copy, and then quickly
+	“merge” your changes back into the original when you’re done.
+
+
+- The “blue/green” pattern (write-side)
+	using ConfigMap = std::map<std::string, std::string>;
+	std::atomic<std::shared_ptr<const ConfigMap>> g_config;
+	void setDefaultHostname(const std::string& value) 
+	{
+		std::shared_ptr<const ConfigMap> blue = g_config.load();
+		do {
+			std::shared_ptr<ConfigMap> green = std::make_shared<ConfigMap>(*blue); // Clone the entire map to get a private copy we can write to!
+			green->insert_or_assign("default.hostname", value);
+		} while (g_config.compare_exchange_strong(blue, std::move(green)));	// “Publish” our changes: Expect g_config to still be blue. If so, store green.
+			// Otherwise, update blue and go around again.
+	}
+	
+
+- The “blue/green” pattern (read-side)
+	using ConfigMap = std::map<std::string, std::string>;
+	std::atomic<std::shared_ptr<const ConfigMap>> g_config;
+	// ...
+	std::shared_ptr<const std::string> getDefaultHostname() {
+		std::shared_ptr<const ConfigMap> blue = g_config.load();
+		const std::string& value = blue.at("default.hostname");
+		return std::shared_ptr<const std::string>(std::move(blue), &value);
+	}
+
+“Aliasing constructor” alert!
+The blue ConfigMap will stay alive for as long
+as it is the current g_config or anyone is still
+holding one of these shared_ptrs	
+
+
+- Recall that if you have a std::thread, you must call .join() on it before
+	it is destroyed; otherwise your program terminates.
+	○ By the way, you can also discharge this responsibility via t.detach()
+	● A joinable std::thread is a resource requiring management, just the same as a heap-allocated pointer or a locked mutex.
+	● C++20 gives us std::jthread (“joining thread”)...
+	std::jthread threadB = std::jthread([&](){ ....
+	may_throw("A is setting up\n"); // But do you see a problem here?
+	threadB is joined automatically in its destructor
+	
+- C++20 std::jthread is cancellable
+bool ready = false;
+std::mutex m; // m protects ready
+std::condition_variable_any cv;
+std::jthread threadB([&](std::stop_token token) {
+	printf("B is setting up\n");
+	std::unique_lock lk(m);
+	cv.wait(lk, token, [&]{ return ready; });
+	if (token.stop_requested()) return;
+	printf("B is running\n");
+});
+may_throw("A is setting up\n");
+{ std::scoped_lock lk(m); ready = true; }
+cv.notify_one();
+printf("A is running\n");	

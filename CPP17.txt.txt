@@ -1,0 +1,10 @@
+Nicolai Josuttis 2018
+1. Static inline in header file for class declaration , ablility to provide global / static variables 
+2. if constexpr // compile time if // only some of the code is compilable 
+3. if constexpr(initialization ; condition ) // constexpr 
+4. std::variant , Deduction guides for template parameters
+5. std::transform_reduce , execution policy std::par 
+6. imp in brace initilization , get rid of initialization list with auto 
+7. 
+
+

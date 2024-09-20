@@ -1,0 +1,64 @@
+Rule of 5:
+Rule of three:
+If a class requires a user-defined destructor, a user-defined copy constructor, or a user-defined copy assignment operator, it almost certainly requires all three. 
+Rule of five : Because the presence of a user-defined (or = default or = delete declared) destructor, copy-constructor, or copy-assignment operator prevents implicit definition of the move constructor and the move assignment operator, any class for which move semantics are desirable, has to declare all five special member functions:
+
+Nicolai Josuttis 2018 C++17
+1. Static inline in header file for class declaration , ablility to provide global / static variables 
+2. if constexpr // compile time if // only some of the code is compilable 
+3. if constexpr(initialization ; condition ) // constexpr 
+4. std::variant , Deduction guides for template parameters
+5. std::transform_reduce , execution policy std::par 
+6. imp in brace initilization , get rid of initialization list with auto 
+7. class template type from constructor e.g std::vector v1{1,2,3}; in assumr T = int 
+8. variatic template 
+9. is_arithmetic_v<T> instead of is_arithmetic<T>::value
+10. std:scoped_lock (mutexs...) 
+11. initialization in consexpr if DO NOT SKIP name , else the scope of that variable ends at semi colon itself 
+    example : if consexpr(std:scoped_lock lg(mutexs...) ; is_arithmetic_v<T>) = Correct 
+			  if consexpr(std:scoped_lock (mutexs...) ; is_arithmetic_v<T>) = In Correct / Trap 
+			  
+12. Fold expression  variable templeate to avoid recursion use  
+13. C++ Evaluation order is Guaranteed 
+14. string_view , has life time issue , use life time profile 
+15. std::visit lile a local vtable for std::variant 
+
+16. combining : variant , Aggregate with base class , deduction guides , 
+    down cast std::get_if<>
+    if constexpr std::same_as_v<decltype(obj)> , const Circle& >  	
+
+
+
+
+1. using namespace std Dont use in nheader files , just use names 
+   using std::string ,std::cout  ,   std::endl , etc 
+2. using std endl in a loop use "\n" to avoid flush 
+3. index based for when range-for fits better
+4. rewriting std algorithms
+5. using C array over std array
+6. any use of reinterpret cast , may be std::bit_cast to byte_array 
+7. casting away const
+8. not knowing map bracket inserts element
+9. ignoring const-correctness
+10. not knowing string literal lifetime
+11. not using structured bindings
+12. out-params instead of returning a struct
+13. not using constexpr
+14. forgetting to mark destructor virtual
+15. thinking class members init in order of init list
+16. not knowing about default vs value initialization
+17. MAGIC NUMBERS
+18. modifying a container while looping over it
+19. returning std move of a local
+20. thinking std move moves something
+21. thinking evaluation order is left to right
+22. unnecessary heap allocations
+23. not using unique ptr and shared ptr
+24. not using make unique and make shared
+25. any use of new and delete
+26. any manual resource management
+27. thinking raw pointers are bad
+28. using shared ptr when unique ptr would do
+29. thinking shared ptr is thread-safe
+30. mixing up const ptr vs ptr to const
+31. ignoring compiler warnings

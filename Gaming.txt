@@ -1,0 +1,176 @@
+Gaming Engine
+Vector Maths 
+
+
+V =  vx + vy + vz
+IIVII = sqrt(vx^2 + vy^2 + vz^2)
+
+^
+V = sqrt(vx^2 + vy^2 + vz^2)
+
+a + b = ( ao + bo, a1 + b1, ... , an-1 + bn-1)
+a - b = ( ao - bo, a1 - b1, ... , an-1 - bn-1)
+
+(a+b)+c=a+(b+c)     Associative law for vector addition.
+a+b=b+a             Commutative law for vector addition.
+( st) a = s (ta)    Associative law for scalar-vector multiplication.
+ta =at              Commutative law for scalar-vector multiplication.
+
+t(a+ b) =ta+ tb     Distributive Iaws for scalar-vector multiplication.
+(s + t)a = sa + ta  Distributive Iaws for scalar-vector multiplication. 
+
+
+Any matrix for which ali ofthe off-diagonal entries are zero is called a diagonal matrix. 
+    For example, the matrix  
+    3 0 0
+    0 8 0
+    0 0 8
+                            
+- The transpose of a matrix M is the matrix denoted by Mt whose rows are equal to the columns of M,
+- If a matrix M is equal to its transpose then it is called a symmetric matrix because all of the entries above
+  and right of the main diagonal are the same as the entries below and left of the main diagonal, with the row and column indices reversed.
+- An n-dimensional vector can be regarded as an n x 1 matrix or as a 1 x n matrix,
+and as such, is called a column vector or a row vector.
+
+-In order to implement column-major storage order in a two-dimensional array,
+we need to make the first array index the column number and the second array
+index the row number.
+
+
+1.4 Basic Matrix Operations
+
+-Basic Matrix Operations
+    (A+B)ij =Aij + Bij
+    (A-B)ij =Aij - Bij
+    (tM)ij = tMij
+
+-Basic property of matrix addition     
+  Property           Description   
+  (A+B)+C=A+(B+C)    Associative law for matrix addition.
+  A+B=B+A            Commutative law for matrix addition.
+  (st)A = s (tA)     Associative law for scalar-matrix multiplication.
+  tA=At              Commutative law for scalar-matrix multiplication.
+  t(A+B)=tA+tB       Distributive Iaws for scalar-matrix multiplication. 
+  (s+t)A=sA+tA       Distributive Iaws for scalar-matrix multiplication. 
+  
+ nxp * pxm  
+(AB)ij  = SUM[k=0 to p](Aik*Bkj)  
+
+1.5 Vector Multiplication
+
+-Basic property of matrix multiplication      
+    Property                 Description
+    (AB)C = A(BC)            Associative law for matrix multiplication.
+    A(B+C)=AB+AC             Distributive laws for matrix multiplication.
+    (A+B)C =AC+BC            Distributive laws for matrix multiplication.
+    (tA)B = A(tB) = t(AB)    Scalar factorization for matrices.
+    (AB)T = BT AT            Product rule for matrix transpose    
+    
+    
+-The dot product between two n-dimensional vectors a and b is a scalar quantity
+    given by the formula    
+        a.b = SUM[i=0,n-1](ai*bi)
+    The corresponding components of the two vectors are multiplied together and
+    summed. This product gets its name from the notation a · b in which a dot is placed
+    between the two vectors participating in the product. Because it produces a scalar
+     quantity, the dot product is also known as the scalar product. 
+     
+     3D dot a.b = ax*bx + ay*by + az*bz
+     
+    If the vectors a and b are regarded as column matrices, then the dot product be
+    also be expressed as 
+          a.b = a * b'
+          
+          a[M,1], b[M,1]
+          a.b = a[M,1] . b[1,M] = a[1,1] , scalar 
+          
+    Comparing the definition of the dot product with the formula for vector magnitude
+    , we see that the dot product of a vector with itself produces the squared magnitude of that vector. 
+    We use the special notation v^2 in place of the dot product v · v or ||v||^2
+
+       Property                     Description
+       a·b=b·a                      Commutative law for the dot product.
+       a·(b+c)=a·b+a·c              Distributive law for the dot product.
+       (ta)· b =a· ( tb) = t (a· b) Scalar factorization for the dot product.
+
+
+     - a.b = ||a||*||b||cos(Th) where Th is the planar angle between the directions of a and b if they were to be drawn as arrows starting at the same location.
+     it provides a computationally cheap way to determine how much two vectors are parallel to each other or perpendicular to each other.
+     assuming the magnitudes of a and b remain the same, 
+     a . b = Max when Th = 0 when a and b are parallel and point in the same direction. 
+     a . b = -Max when Th = 0 when a and b are parallel and point in the opp direction. 
+     a . b = 0  Th = 90 a and b are perpendicular, no matter what the magnitudes of a and b are. orthogonal
+ 
+ 
+-cross product 
+    The cross product between two 3D vectors a and b is another 3D vector given by the formula
+    axb =(ay bz - axby , axbx -axbx , axby - aybx)·  the z component of the cross product is calculated using the x and y components of the input vectors. 
+                                                     subscripts for a and b used in the positive term of each component of the product are the next two
+                                                     letters in the sequence x -->y-->z, with wraparound, and the subscripts are simply reversed for the negative term.
+     Cross products gives another vector WHICH IS PERPENDICULAR   
+     axb = 0 if a, b are parallel , 
+     if a and b are paralll , b = ta b is scalar multiple of a 
+     so a x ta = 0
+
+    axb = | 0  -az  ay | |bx |  =  |-az*by + ay*bz |   
+          | az  0  -ax | |by |     | az*bx - ax*bz |
+          |-ay  ax   0 | |bz |     |-ay*bx + ax*by |    
+
+    ||axb|| =  ||a||*||b|| * sinTh
+
+    Property                        Description
+     axb =-bxa                      Anticommutativity ofthe cross product.
+    ax(b+e)=axb+axe                 Distributive law for the cross product.
+    (ta) x b =ax ( tb) = t ( a'X b) Scalar factorization for the cross product.
+    a x (b x e) = b (a.e)-e (a. b)  Vector triple product.
+    (axb)2 =a 2 b 2 -(a·b)2         Lagrange's identity. 
+     
+    a.(a x b) and b.(a x b) 
+    
+    (axb)^2 =     (a)^2 * (b)^2 * (sin(Th))^2
+    
+ 
+1.6 Vector Projection 
+ decomposing a vector into its separate components.
+    i = (1,O,O)
+    j = (0,1,0)
+    k = (0,0,1)
+    
+    v = vx*i + vy*j + vz*k 
+    v = ( v . i)*i +(v . j)*j +(v . k)*k
+    Each component of Equation is called the projection of v onto one of the vectors i, j, and k parallel to the
+    coordinate axes.
+    
+    a11b = (a.b / ( (b)^2 )) * b
+    The notation a11b indicates the component of the vector a that is parallel to the vector b, and Equation gives us the projection of a onto b.
+    a11b = (b.b' / ( (b)^2 )) * a
+    The product bb' yields a symmetric matrix that can be multiplied by the vector a to perform the projection.
+    The matrix in this equation is an example of an outer product.
+    
+  rejection:
+    If we subtract the projection a11b from the original vector a, then we get the part
+    that's perpendicular to the vector b because we've removed everything that is parallel
+    to b. The perpendicular part of the decomposition is called the rejection of a
+    from b and is written  
+    a_|b = a - (a.b/(b^2))*b 
+    
+    
+1.7 Matrix lnversion
+        The identity matrix I n is the n x n matrix whose entries on the main diagonal are all ones and whose entries everywhere else are all zeros
+        In is called the identity matrix because it has the property that AIn = A
+        
+        The determinant of an n x n matrix M is a scalar value that can be thought of as a sort of magnitude for M It is written as det (M) or IMI.
+        
+Property                     Description
+det (I n )= 1                Determinant ofthe identity.
+det ( A T ) = det (A)        Determinant of a transpose matrix.
+det ( A -i ) = 1/ det (A)    Determinant of an inverse matrix.
+det ( AB) = det (A) det ( B) Product rule for the determinant.
+det ( t A) = tn det (A)      Scalar factorization for the determinant.        
+
+lnverse Calculation 
+If it exists, the inverse of a matrix can be found through a process called GaussJordan
+elimination in which elementary row operations are successively applied
+to the matrix until it is transformed into the identity matrix.
+        
+        

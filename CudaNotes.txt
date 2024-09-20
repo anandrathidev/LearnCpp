@@ -1,0 +1,83 @@
+CUSA L:
+FlOPS are good but they dont matter , Mem bandwidth matters 
+E.g A100 
+	108 SM @ 1410 Mhz  , 1555 Gbytes / sec = Availaible 
+	can request 64 Bytes of memory per clock 
+	64 Bytes* 108 * 1410 = 9750 G / sec  = Requested 
+	
+	9750/1555 = 6.2 
+	
+	Fp64 = 1555/8 = 194 GFLOPS / sec
+
+CUDA  4runs 4 wraps at a time , each warp 32 threads , if each thread reads 8 bytes 
+4 * 32 * 8 = 1024 bytes which is exactly same as 1 row or page  in RAM 
+
+@21:17  "Its exactly the right amount of data  to hit the peak bandwidth of my mem system , 
+Even if my program reads data from all over the place , each read is exactly ONE page of my memory " I didnt understand this statement 21:17   "Even if my program reads data from all over the place"  Does it mean even if the data is read from non consecutive memory ??
+
+Thread block shd be not less than 128 Threads
+
+
+Occupancy:
+
+1. CUDA blocks 
+    HW intentionally spread the blocks as wide as possible : There is no Gurantyee where the block will run where[ in which SM ] 
+	e.g 2 bloks in each SM it depends on block size , Num of blokc can be upto 32 , depending on block size 
+	As the 
+	
+    Resources e.g A100 : 
+	2048 Max Thread / sm 
+	32 Max blocks 
+	65536 Total registers per SM 
+	160 kb Sahred memory  per SM 
+	4 concurrent wraps active 
+	64 fp 32 cores 
+	32 fp 64 cores 
+	192 kb L1 cache 
+	90 GB/sec badnwidth  / sem 
+	1410 hezs 
+	
+
+	with 90 GB/sec badnwidth / SM so spreading out bloks into diffrent SM we maximize mem badwidth GRID can use or reduce the chance blocks contending for bandwidth with others 
+	We looked vlocks running threads 
+	
+	All blocks in the grid run the same program using the same numberof threads , leadiong to 3 resource requirements 
+	Block size = numer of concurrent threads 
+	shared mem = common to all threads in SM 
+	large register file 
+	common for cuda program rto use 10 0register in cuda thread 
+	256 Threads per block 
+	64 Registers per thread 
+	256*64 = 16384 Register per blocks 
+	48 kb Shared memory 
+	
+
+	
+Scheduling: Block never spans into two SM it is always resident to single SM 
+	So blocks are Threads, Registers and Shared memory , these constraints define how many blocks are placed in Single SM concurrently 
+	So shared memory occupancy 
+	
+	Occupancy => Number of blocks / SM 
+	
+	
+	Summary:
+38:24
+	but we saw that memory system itself depends on good access patterns and the laws of physics regarding capacitance
+dictate that randomly reading memory is much more expensive than reading it linearly and we learned that if we get it wrong
+we slow everything down by 92 percent that's on top of already being limited by the performance of the memory system
+compared with what the sms won so the story got a bit bad
+but we learned that warp execution system the gpu can save us by reading from lots of threads at once
+but that that we need all the threads in the warp to be working on adjacent data and that all the thread blocks better
+have a minimum of 128 threads so that i can issue these these maximum performance requests to my memory system
+	
+
+we learned that the hardware spreads blocks out as widely as possible across csm's to maximize the memory bandwidth
+that they can request and we learned that resource packing limitations have the second biggest	
+	
+	
+CUDA Programming 
+
+
+N = Array Size 
+M = Block Size or Number of Threads per Block 
+KernalFunc<<< (N+M-1)/M , M >>>(int * data, N);

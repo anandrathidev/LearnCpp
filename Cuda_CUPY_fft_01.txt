@@ -1,0 +1,41 @@
+cupy
+
+from time import perf_counter_ns
+import cupy
+import numpy as np
+from scipy  import fft
+from cupyx.scipy  import fft as fftgpu
+
+
+array_cpu = np.random.randint(0,255, size=(4000,4000))
+t1 = perf_counter_ns(); array_gpu = cupy.asarray(array_cpu) ; t2 = perf_counter_ns(); print(f"Copy Time: {(t2-t1)/1e6}");
+type(array_gpu)
+
+def testCPU():
+	besttime = 0;
+	for x in range(10): 
+		t1 = perf_counter_ns(); 
+		fft.fftn(array_cpu) ; 
+		t2 = perf_counter_ns(); 
+		if(besttime==0):
+			besttime=t2-t1;
+		newtime = t2-t1
+		if(newtime<besttime):
+			besttime=newtime
+	print(f"CPU Time: {besttime/1e6}");
+
+def testGPU():
+	besttime = 0;
+	for  x in range(10) : 
+		t1 = perf_counter_ns(); 
+		fftgpu.fftn(array_gpu) ; 
+		t2 = perf_counter_ns(); 
+		if(besttime==0):
+			besttime=t2-t1;
+		newtime = t2-t1
+		if(newtime<besttime):
+			besttime=newtime
+	print(f"GPU Time: {besttime/1e6}");
+	
+testCPU()
+testGPU()

@@ -1,0 +1,389 @@
+Value Refrences
+                   expression
+                     /  \
+(have identity)glvalue  rvalue(can be moved)               
+             /      \   /      \ 
+         lvalue    xvalue 	  prvalue
+
+Main Categories: 
+   glvalue : Expression whose evaluation determines the identity of an object or function 
+   xvalue : glvalue that denotes an object whose resources can be reused (Usually because it is near the end of its lifetime)
+   prvalue : Expression whose evaluation initizalizes an object, or computes the value of the operand of an operator , 
+   as specified in the context which it appears, or an expression that has cv void   
+
+Value type is the quality of an expression and not of object.
+
+--------------------------------------------------------------------------------------------
+               |   Has Identity (glvalue)    | Doesnt have Identity  
+--------------------------------------------------------------------------------------------
+Can't be Moved |  lvalue                     |         -  
+--------------------------------------------------------------------------------------------
+Can be Moved   |  xvalue                     |       prvalue
+--------------------------------------------------------------------------------------------
+
+C++ 17 has Guranteed copy eliision
+--------------------------------------------------------------------------------------------
+               |   Has Identity (glvalue)    | Doesnt have Identity  
+--------------------------------------------------------------------------------------------
+Can't be Moved |  lvalue                     |         -  
+--------------------------------------------------------------------------------------------
+Can be Moved   |  xvalue                     |       prvalue's materialization 
+--------------------------------------------------------------------------------------------
+The result of a prvalue is the value that the expression stores into its context (materialization)
+
+C++ 20 
+Implicit moves from rvalye refrences in return statement 
+Moves value categories from basic to expression 
+
+C++ 23 
+ deducing this , like_t 
+
+
+Binding rules are important , value category and binding rules into consideration 
+	1. Initializartion or assignment 
+	2. func call (including non static)
+	3. return statemnt 
+
+	1. Initializartion or assignment 
+								   Binds Lval     Binds Rval              
+		lval ref                     V                X
+		const lval ref               V                V
+		rval ref                     X                V 
+		const rval ref               V                X 
+
+		const lval ref can increase lifetime of an object (not allowing modification) .
+		rval ref can increase lifetime of temp .
+
+        Ex:
+        int a = 42;
+        int& la1 = a; // OK, la = 42
+        int& la2 = 73; // Error
+        const int& cla1 = a; // OK
+        const int& cla2 = 73; // OK
+        int&& ra1 = a; // Error
+        int&& ra2 = a + 42; // OK
+        const int&& cra1 = a; // Error
+        const int&& cra2 = a + 42; // OK        
+
+
+
+	2. func call (including static)
+
+		Limitation in context of the func are according to the binding func 
+		-----------------------------------------------------------------------
+						Func can Modify Data     |  Caller can observe Data 
+		-----------------------------------------------------------------------
+		lval ref                 V                         V
+		const lval ref           X                         V
+		rval ref                 V                         X
+		const rval ref           X                         X
+		-----------------------------------------------------------------------
+		EXAMPLES: 
+		struct Data 
+		{
+			int _n;
+			Data(int i):_n(i){}
+		};
+		
+		const Data getData(int x)
+		{
+			return Data(x)
+		}
+		
+		void foo(Data& x);        1
+		void foo(const Data& x);  2
+		void foo(Data&& x);       3
+		void foo(const Data&& x); 4
+
+		Data d = 42;
+		Data &lval_ref_d = d;
+		const Data &c_lval_ref_d = d;
+		Data &&rval_ref_d = Data(73);
+		const &&Data c_rval_ref_d = Data(42);
+
+		foo(lval_ref_d);	 // lvalue: 1,2 
+		foo(c_lval_ref_d);	 // const lvalue: 2
+		foo(rval_ref_d);	 // lvalue: 1,2 
+		foo(c_rval_ref_d);	 // const lvalue: 2
+		foo(Data(73));       // xvalue: 3,4,2
+		foo(getData(73));    // const xvalue: 4,2!
+		
+	
+	3. return statemnt 
+		Starting from C++17 copy ellision mandtory 
+		1. Data Init 
+		Data d = Data(Data(42)) // only 1 constructor is called Avoids copy constructor 
+		2. Return 
+		Data getData(int x)
+        {
+		  return Data(x);
+        }
+   		
+		Data d = getData(42); // 1 CTOR avoids copy / move 
+		
+	  return materialization 
+	    Temp materialization converstion 
+		prvalue to xvalue 
+
+
+Summary:
+	Binding rules apply in following "events ":
+     1. initialization or assignment 
+     2. Func call (including non static called on obj)
+     3. Return Statement 
+	 
+    Behaviour of the entity :  
+    1. Initizalization : limits are accordingto the ref which binds it 
+    2. Func call : limits inside the function are according to the overload which binds it 
+    3. Return statement : limits as initizalization, with additional rules due to optimization and const 
+	
+Copy Elision Optimizations:
+1.Object initialization
+    Data d = Data(Data(42)) // 1 CTOR (avoids: CTOR, Copy CTOR)
+    
+
+2. Return statement:
+    An un named Return Value Optimization (RVO):
+    Data getData( int x)
+    {
+        return Data(x);
+    }
+    Data d = getData(42)  // 1 CTOR (avoids: CTOR, Move CTOR)
+
+Return Statement: Materialization
+
+    Temporary materialization conversion conv.rval
+    A prvalue of type T can be converted to an xvalue of type T . This conversion initializes a temporary object of type
+    T from the prvalue by evaluating the prvalue with the temporary object as its result object,
+    and produces an xvalue denoting the temporary object. [in order to materialize] T shall be a complete type.
+ 
+Refrence Collision: can change the type based on expr , The copiler will collide
+     
+	typedef int & lr
+	typedef int && rr
+	
+	int a = 10;  
+	lr& b = a;    // int &
+	lr&& c = a;   // int &
+	rr& d = a;    // int &
+	rr&& e = 73;  // int &&
+	
+
+Forwarding Refrence : keeps fvalue categories same
+    Due to TAD rval ref in template has a special context 
+    template <typename T>
+    void foo(T && t)
+    {
+    // Type of T here 
+    }
+
+    int a = 42;
+    const int& cla = a;
+	int && b = 73;
+	foo(a);            // T&&  T = int&  
+	foo(cla);          // T&&  T = const int&  
+	foo(std::move(a)); // T&&  T = int  
+    	
+
+Tools:
+    std::move // mark spomething as temp produces an xvalue expr T&& 
+        Eq to static cast to a T rval ref type 
+        Notice std::move may not do what we hoped 
+
+        void foo(int& x) {std::cout << "int&\n";} 
+        void foo(const int& x) {std::cout << "const int&\n";} 
+        void foo(int&& x) {std::cout << "int&&\n";} 
+
+        int main()
+        {
+
+        int a = 4;
+        int &b = a;
+        const int&  c = a;
+        const int&& d = 42;
+        // Once const is in pic we may get something else 
+        foo(std::move(b)); // int&& -> foo(int&&)  
+        foo(std::move(c)); // const int& -> foo(const int&) 
+        foo(std::move(d)); // const int&& -> foo(const int&) 
+        return 0;
+        }
+
+    std::forward<T>
+
+        void Foo( int & x)
+        {
+            cout << "int &\n";
+        }
+
+        void Foo( const int & x)
+        {
+            cout << "const int &\n";
+        }
+
+        void Foo( int&& x) 
+        {
+            cout << "int &&\n";
+        }
+          
+        template <typename T>
+        void wrapper(T && t)
+        {
+            Foo(std::forward<T>(t));
+        }
+            
+        template <typename T>
+        void NFwrapper(T && t)
+        {
+            Foo(t);
+        }
+
+       int a = 4;
+       const int& lca = a;
+       wrapper(a);     // int& 
+       NFwrapper(a);   // int&
+       wrapper(lca);   // const int&
+       NFwrapper(lca); // const int&
+       wrapper(6);     // int&&
+       NFwrapper(6);   // int&
+       
+    std::decay
+        This behaviour resembles auto , auto performs auto decay 
+        Type trait, result is accessible through `_t`
+        Performs following conversion 
+        1. Array to pointer 
+        2. Function to func ptr 
+        3. lvalue to rvalue (remove cv qualifiers , refrences )(issue for move-onbly types )
+        template <typename T, typename U>
+        struct decay_is_same : std::is_same<typename std::decay<T>, typename U>
+        {}
+
+        decay_is_same<int&, int>::value;  // True(1)
+
+    decltype : Evaluates an expression , yields its type + value category (AKA the declared type)
+         
+        Language utility, can be used instead of type , as a placeholder which preserves value category. 
+        decltype unlike auto preserves value category . for e,g expr of type T 
+        
+        if expr is xvalue ,  yeilds T&&
+        if expr is lvalue ,  yeilds T&
+        if expr is prvalue , yeilds T
+        
+        
+        int&& foo(int&i) 
+        {
+          return std::move(i); 
+        }
+        int i = 73;
+        auto a = foo(i);   // Type : int | VC: lvalue  
+        decltype(auto) b = foo(i);   // Type : rvalue ref  | VC: lvalue  
+
+
+        The fine print:
+        *The T prvalue doesn’t materialize, so T can be an incomplete type (C++17)
+        *If evaluation fails (entity is not found or overload resolution fails), program is ill formed
+        * ((expression )) has a special meaning, and yields an lvalue expression.
+        
+        int&& a = 42
+        decltype(a) b = 42     // Type: rvalue ref to int | VC: lvalue
+        decltype((a)) c = 73   // Error! Binding non const lvalue ref to prvalue
+        
+        To summarize:            decltype () main use
+        1. When the type is unknown (syntax is available from C++14):
+            template< typename T, typename U>
+            decltype( auto ) Add(T t, U u)
+            {
+                return t + u;
+            };        
+            
+            template< typename T>
+            decltype( auto ) Wrapper(T&& t)
+            {
+                // do something...
+                return std::forward<T>( t);
+            };
+        
+        2. To preserve the value category of the expression:   
+        int&& a = 42          // Type: rvalue ref to int | VC: lvalue
+        decltype(a) b = a     // Error! (binding rvalue ref to an lvalue ref a)
+        decltype (a) c = 73   // Type: rvalue ref to int | VC: lvalue
+        decltype ((a)) d = a; // Type: lvalue ref to int | VC: lvalue
+    
+
+
+    std::declval : 
+    Utility function, produces:
+      xvalue expression T&&
+      If T is void, returns T
+    Can be used with expression to return the expression’s reference type
+    Can return a non constructible or incomplete type
+   
+        struct Type {
+        int a;
+        int Foo() { return 42 ;
+        private:
+        Type(){}
+        };    
+        Type t; // Fails
+        typeid ( declval <Type>()). name();// Type
+    Combined with decltype , can get the type of a member (even when Type is non
+     decltype ( declval <Type>().a) b = 73    
+
+    Shouldn’t be used in an evaluated context (evaluating std:: decltype is an error) 
+    
+    std::declval <T>()
+    std::declval allows us to access T members, in a way preserves value categories
+
+    struct Type {
+        int a;
+        int& ra = a;
+        int getA () { return int 73 );
+        int& getRefA () { return ra; };
+    private:
+        Type(int i ) : a(int (i)) {}
+    };
+    
+    
+    std::declval <Type>().a;      // xvalue
+    std::declval <Type>().ra;     // lvalue    
+    std::declval <Type>().getA(); // prvale
+    std::declval <Type>().getRefA();     // lvalue    
+    
+
+lvalue ref:
+	called func can modify
+	caller will observe the modification
+
+const ref:
+	called func can *NOT* modify
+
+
+Rvalue ref:
+	called func can modify
+	caller will *NOT* observe ANY modification MADE
+	May rolong the lifetime of rvalus as if it were lvalue
+	
+	
+	
+Expression:
+		data type : int , ptr , string, hash, lval ref , rval ref 
+		value category : lvalue rvalue
+		
+
+
+Refrences 
+
+Widget&& var1 = Widget{};
+
+auto&& var2 = var1;
+
+Since var2 is declared with auto , type wil be deduced var2 is really a lvalue ref , This type deduction is called forwarding ref 
+
+
+
+Value Categories :
+glvalue : genrelized lvalue ,has id , is an lvalue or xvalue , may or may not be moved from 
+prvalue : does not have id , can be moved from , 
+          is an rvalue that is not xvalue 
+		  
+xvalue : have id , can be moved , 
+		result of expression involving 	
